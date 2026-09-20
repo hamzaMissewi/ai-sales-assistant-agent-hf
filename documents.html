@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Document Manager</title>
+<style>
+:root{--brand:#059669;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f1f5f9}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:ui-sans-serif,system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:28px 18px}
+.wrap{max-width:860px;margin:0 auto}
+nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+nav a{color:var(--brand);text-decoration:none;font-size:13.5px;font-weight:600}
+h1{font-size:22px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:20px}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 15px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:.15s}
+.pill:hover{border-color:var(--brand);color:var(--brand)}
+.pill.active{background:var(--brand);border-color:var(--brand);color:#fff}
+.drop{border:2px dashed #cbd5e1;border-radius:16px;padding:26px;text-align:center;background:#fff;transition:.15s;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--brand);background:#f0fdf4}
+.drop b{font-size:14px}
+.drop p{color:var(--muted);font-size:12.5px;margin-top:4px}
+.drop input{display:none}
+.statusline{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--muted);min-height:22px}
+.spin{width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:16px}
+.card h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.card h2 .count{font-size:12px;background:var(--brand);color:#fff;border-radius:999px;padding:2px 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid #f1f5f9;vertical-align:middle;word-break:break-all}
+tr:last-child td{border-bottom:none}
+.empty{color:var(--muted);font-size:13px;padding:14px 4px}
+.kind{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700}
+.badge.ok{background:#dcfce7;color:#166534}
+.badge.skip{background:#fef3c7;color:#92400e}
+.del{background:none;border:1px solid #fecaca;color:#b91c1c;border-radius:9px;padding:5px 11px;font-size:12px;cursor:pointer;transition:.15s}
+.del:hover{background:#fef2f2}
+.size{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <h1>Document Manager</h1>
+    <div style="display:flex;gap:14px">
+      <a href="/dashboard">leads dashboard</a>
+      <a href="/">&larr; back to assistant</a>
+    </div>
+  </nav>
+  <p class="sub">Upload PDFs, Excel, Word, markdown, CSV or images. Text is extracted and indexed so the sales agent can answer from these files. Files you can't index (e.g. images without OCR) are still stored.</p>
+
+  <div class="pills" id="pills"></div>
+
+  <div class="drop" id="drop">
+    <b>Drop files here or click to browse</b>
+    <p>Multiple files allowed · md, txt, csv, xlsx, pdf, docx, png, jpg, jpeg, gif, bmp, webp</p>
+    <input type="file" id="file" multiple>
+  </div>
+  <div class="statusline" id="status"></div>
+
+  <div class="card">
+    <h2 id="cardTitle">Knowledge base <span class="count" id="count">0</span></h2>
+    <div id="list"><div class="empty">Select a client to load its files.</div></div>
+  </div>
+</div>
+<script>
+const pills=document.getElementById("pills"), drop=document.getElementById("drop"),
+      file=document.getElementById("file"), status=document.getElementById("status"),
+      list=document.getElementById("list"), count=document.getElementById("count"),
+      cardTitle=document.getElementById("cardTitle");
+let clients=[], current=null;
+
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtSize=n=>{ if(!n) return "0 B"; const u=["B","KB","MB","GB"]; let i=0; while(n>1024&&i<u.length-1){n/=1024;i++} return n.toFixed(n<10&&i?1:0)+" "+u[i]; };
+function setStatus(html,spn){ status.innerHTML=(spn?`<span class="spin"></span>`:"")+html; }
+
+async function boot(){
+  try{ clients=await (await fetch("/api/documents")).json(); }
+  catch(e){ status.textContent="Server unreachable."; return; }
+  clients.forEach(c=>{
+    const b=document.createElement("button"); b.className="pill"; b.textContent=c.client;
+    b.onclick=()=>load(c.client);
+    pills.appendChild(b);
+  });
+  if(clients.length) load(clients[0].client);
+}
+
+async function load(id){
+  current=id;
+  document.querySelectorAll(".pill").forEach(b=>b.classList.toggle("active",b.dataset.id===id));
+  setStatus("Loading files...",true);
+  try{
+    const j=await (await fetch(`/api/documents/${id}`)).json();
+    render(j.docs);
+    setStatus("Ready.");
+  }catch(e){ setStatus("Could not load files."); }
+}
+
+function render(docs){
+  cardTitle.innerHTML = (clients.find(c=>c.client===current)?.brand_name||current) + " knowledge base <span class=\"count\">" + docs.length + "</span>";
+  count.textContent=docs.length;
+  if(!docs.length){ list.innerHTML=`<div class="empty">No files yet. Upload some above.</div>`; return; }
+  list.innerHTML=`<table><tr><th>File</th><th>Type</th><th>Size</th><th>Status</th><th></th></tr>`+
+    docs.map(d=>`<tr>
+      <td>${esc(d.name)}</td>
+      <td><span class="kind">${esc(d.kind)}</span></td>
+      <td class="size">${fmtSize(d.size)}</td>
+      <td>${d.indexed?'<span class="badge ok">indexed</span>':'<span class="badge skip">stored, not indexed</span>'}</td>
+      <td><button class="del" data-name="${esc(d.name)}">Delete</button></td>
+    </tr>`).join("")+`</table>`;
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>removeFile(b.dataset.name));
+}
+
+async function uploadFiles(files){
+  if(!current) return;
+  setStatus(`Uploading ${files.length} file(s)...`,true);
+  let ok=0;
+  for(const f of files){
+    const fd=new FormData(); fd.append("file",f);
+    const r=await fetch(`/api/documents/${current}`,{method:"POST",body:fd});
+    if(r.status===415){ try{ const j=await r.json(); setStatus(`Skipped ${esc(f.name)}: ${esc(j.detail||"unsupported")}`);}catch(e){ setStatus(`Unsupported: ${esc(f.name)}`);} continue; }
+    if(r.ok) ok++;
+  }
+  setStatus(`Uploaded ${ok}/${files.length}. Re-indexing...`,true);
+  await load(current);
+}
+
+function removeFile(name){
+  if(!confirm(`Delete ${name}?`)) return;
+  (async()=>{
+    setStatus(`Deleting ${esc(name)} and re-indexing...`,true);
+    await fetch(`/api/documents/${current}/${encodeURIComponent(name)}`,{method:"DELETE"});
+    await load(current);
+  })();
+}
+
+drop.addEventListener("click",()=>file.click());
+drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("over");});
+drop.addEventListener("dragleave",()=>drop.classList.remove("over"));
+drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("over");uploadFiles([...e.dataTransfer.files]);});
+file.addEventListener("change",()=>{ if(file.files.length) uploadFiles([...file.files]); file.value=""; });
+boot();
+</script>
+</body>
+</html>

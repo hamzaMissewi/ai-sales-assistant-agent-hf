@@ -1,0 +1,15 @@
+.git
+.gitignore
+.dockerignore
+.env
+__pycache__
+.ruff_cache
+.venv
+venv
+vectordb
+leads_*.jsonl
+demos_*.jsonl
+*copy*
+*.bak
+/config.yaml
+WHAT_todo.md

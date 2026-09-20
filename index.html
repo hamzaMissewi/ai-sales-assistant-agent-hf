@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Sales Assistant</title>
+<style>
+:root{
+  --brand:#059669; --brand-dark:#047857; --accent:#f59e0b;
+  --bg:#eef2f7; --card:#ffffff; --ink:#0f172a; --muted:#64748b;
+  --bubble:#f1f5f9; --line:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(1000px 500px at 10% -10%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
+             radial-gradient(800px 400px at 110% 10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 55%),
+             var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  padding:18px;color:var(--ink);
+}
+.app{
+  width:min(880px,100%);height:min(88vh,780px);
+  background:var(--card);border-radius:22px;box-shadow:0 24px 60px -20px rgba(2,6,23,.35);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+/* header */
+header{
+  background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+  color:#fff;padding:16px 18px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 6px 18px -8px rgba(2,6,23,.4);position:relative;z-index:5;
+}
+.avatar{
+  width:46px;height:46px;border-radius:50%;flex:none;
+  background:linear-gradient(135deg,var(--accent),var(--brand-dark));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:20px;border:2px solid rgba(255,255,255,.55);
+  box-shadow:0 4px 10px -4px rgba(0,0,0,.4);
+}
+.head-meta{flex:1;min-width:0}
+.head-meta h1{font-size:16px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head-meta p{font-size:12.5px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;margin-top:3px}
+.dot{width:8px;height:8px;border-radius:50%;background:#4ade80;position:relative}
+.dot::after{content:"";position:absolute;inset:-3px;border-radius:50%;background:#4ade80;opacity:.4;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{transform:scale(.7);opacity:.5}50%{transform:scale(1.4);opacity:0}}
+.hbtn{
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;
+  border-radius:11px;padding:8px 11px;cursor:pointer;font-size:12.5px;font-weight:600;
+  display:flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap;
+}
+.hbtn:hover{background:rgba(255,255,255,.28)}
+.hbtn svg{width:15px;height:15px}
+/* client bar */
+.clientbar{padding:10px 16px 0;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:#fff}
+.clients{
+  padding:4px 16px;border:1px solid var(--line);border-radius:999px;cursor:pointer;
+  font-size:12.5px;font-weight:600;color:var(--muted);background:#fff;transition:.15s;margin-bottom:10px;
+}
+.clients:hover{border-color:var(--brand);color:var(--brand)}
+.clients.active{background:var(--brand);border-color:var(--brand);color:#fff}
+/* chat */
+main{flex:1;overflow-y:auto;padding:20px 18px 8px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+.msg{display:flex;gap:10px;max-width:82%;animation:rise .22s ease}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.msg.user{align-self:flex-end;justify-content:flex-end}
+.msg.agent{align-self:flex-start}
+.mini{
+  width:30px;height:30px;border-radius:50%;flex:none;margin-top:2px;color:#fff;font-size:13px;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--brand-dark));
+  display:flex;align-items:center;justify-content:center;
+}
+.bubble{position:relative;border-radius:16px;padding:11px 14px;font-size:14.5px;line-height:1.55;word-break:break-word;white-space:pre-wrap}
+.msg.user .bubble{background:var(--brand);color:#fff;border-radius:16px 16px 4px 16px}
+.msg.agent .bubble{background:var(--bubble);color:var(--ink);border-radius:4px 16px 16px 16px}
+.ts{display:block;font-size:10.5px;color:var(--muted);margin-top:5px;opacity:.85}
+.msg.user .ts{text-align:right;color:rgba(255,255,255,.75)}
+.notice{
+  align-self:center;font-size:12px;color:var(--muted);background:color-mix(in srgb, var(--brand) 8%, #fff);
+  border:1px solid color-mix(in srgb, var(--brand) 22%, #fff);border-radius:999px;padding:7px 14px;
+  display:inline-flex;align-items:center;gap:8px;max-width:90%;
+}
+.notice b{color:var(--brand-dark)}
+/* typing */
+.typing{display:inline-flex;gap:5px;padding:14px 16px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+/* quick replies */
+.quicks{padding:10px 18px 6px;display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  border:1.5px solid color-mix(in srgb, var(--brand) 45%, #fff);background:color-mix(in srgb, var(--brand) 6%, #fff);
+  color:var(--brand-dark);border-radius:999px;padding:7px 13px;font-size:12.8px;font-weight:600;cursor:pointer;transition:.15s;
+}
+.chip:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+/* input */
+footer{padding:12px 14px 14px;border-top:1px solid var(--line);background:#fff}
+.inputrow{display:flex;gap:10px;align-items:flex-end}
+input[type=text],textarea{
+  flex:1;border:1px solid var(--line);border-radius:14px;padding:12px 15px;font-size:14.5px;font-family:inherit;
+  resize:none;max-height:110px;outline:none;background:#f8fafc;transition:.15s;color:var(--ink);
+}
+input[type=text]:focus,textarea:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent)}
+.send{
+  width:46px;height:46px;border:none;border-radius:14px;cursor:pointer;flex:none;
+  background:linear-gradient(135deg,var(--brand),var(--brand-dark));color:#fff;
+  display:flex;align-items:center;justify-content:center;transition:.15s;
+  box-shadow:0 6px 16px -6px var(--brand-dark);
+}
+.send:hover{transform:translateY(-1px)}
+.send:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.send svg{width:20px;height:20px}
+.foot{text-align:center;font-size:11px;color:var(--muted);margin-top:8px}
+.handoff-hint{color:var(--brand-dark);cursor:pointer;text-decoration:underline;border:0;background:none;font-size:inherit;font-family:inherit}
+/* modal */
+.overlay{
+  position:absolute;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(3px);z-index:20;
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.overlay.open{display:flex}
+.modal{
+  background:#fff;border-radius:20px;width:min(420px,100%);padding:22px;box-shadow:0 30px 60px -20px rgba(2,6,23,.5);
+  animation:pop .2s ease;
+}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.modal h2{font-size:17px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.modal .sub{font-size:12.8px;color:var(--muted);margin-bottom:16px}
+.close{border:none;background:var(--bubble);border-radius:9px;width:30px;height:30px;cursor:pointer;font-size:15px;color:var(--muted)}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:var(--ink)}
+.field input,.field textarea{
+  width:100%;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:14px;
+  font-family:inherit;outline:none;background:#f8fafc;
+}
+.field input:focus,.field textarea:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent)}
+.submit{
+  width:100%;border:none;border-radius:12px;padding:12px;font-size:14.5px;font-weight:700;color:#fff;cursor:pointer;
+  background:linear-gradient(135deg,var(--brand),var(--brand-dark));transition:.15s;
+}
+.submit:hover{filter:brightness(1.05)}
+.ok{text-align:center;padding:10px 0}
+.ok .glyph{width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,var(--brand) 14%,#fff);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--brand)}
+.ok h3{font-size:16px;margin-bottom:6px}
+.ok p{font-size:13px;color:var(--muted);margin-bottom:16px}
+@media (max-width:640px){
+  body{padding:0}.app{height:100vh;height:100dvh;width:100%;border-radius:0}
+  .head-meta h1{font-size:15px}
+  .hbtn span.t{display:none}
+  .msg{max-width:90%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="avatar" id="avatarChar">S</div>
+    <div class="head-meta">
+      <h1 id="agentName">Sami</h1>
+      <div class="status"><span class="dot"></span><span id="statusText">Online · replies in seconds</span></div>
+    </div>
+    <button class="hbtn" id="btnContact" title="Leave your details">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12q1.65 0 2.825-1.175Q16 9.65 16 8t-1.175-2.825Q13.65 4 12 4 10.35 4 9.175 5.175 8 6.35 8 8t1.175 2.825Q10.35 12 12 12Zm0 10.5L8.25 19H5q-.625 0-1.062-.438Q3.5 18.125 3.5 17.5v-9q0-.625.438-1.062Q4.375 7 5 7h.25Q5 6.5 5.013 6.2t.062-.8q.35-1.375 1.438-2.262Q7.6 2.25 9 2.25h6q1.4 0 2.488.888 1.087.887 1.437 2.262.05.5.063.8t-.013.8h.25q.625 0 1.062.438.438.437.438 1.062v9q0 .625-.438 1.062Q19.625 19 19 19h-3.25ZM12 14q1.4 0 2.35-.95 3.4.05 4.775.975 1.375.925 1.375 2.375v1.6h-5.4L12 18.9l-3.1-.9H3.5v-1.6q0-1.45 1.375-2.375T7.65 13.05Q8.6 14 10 14Zm2-6q0 .825-.588 1.413Q12.825 10 12 10t-1.412-.587Q10 8.825 10 8t.588-1.413Q11.175 6 12 6t1.412.587Q14 7.175 14 8Z"/></svg>
+      <span class="t">Contact us</span>
+    </button>
+    <a class="hbtn" href="/documents" target="_blank" title="Knowledge base files">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h8l6 6v12q0 .825-.587 1.413Q18.825 22 18 22H6q-.825 0-1.412-.587Q4 20.825 4 20V4q0-.825.588-1.413Q5.175 2 6 2Zm7 1v6h6l-6-6Z"/></svg>
+      <span class="t">Files</span>
+    </a>
+    <a class="hbtn" href="/dashboard" target="_blank" title="Leads dashboard">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 19V9h2v10H4Zm5 0V5h2v14H9Zm5 0v-7h2v7h-2Zm5 0V3h2v16h-2Z"/></svg>
+      <span class="t">Dashboard</span>
+    </a>
+    <button class="hbtn" id="btnNew" title="New conversation">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 19V5h6v14H5Zm9 0V5h2v14h-2Zm5 0V3h2v16h-2Z"/></svg>
+    </button>
+  </header>
+
+  <div class="clientbar" id="clientbar"></div>
+
+  <main id="log"></main>
+
+  <div class="quicks" id="quicks"></div>
+
+  <footer>
+    <div class="inputrow">
+      <textarea id="inp" rows="1" placeholder="Ask me anything..." aria-label="Message"></textarea>
+      <button class="send" id="btnSend" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20v-6l8-2-8-2V4l19 8Z"/></svg>
+      </button>
+    </div>
+    <div class="foot" id="foot"></div>
+  </footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div id="formView">
+      <h2>Leave your details <button class="close" id="btnClose" aria-label="Close">&times;</button></h2>
+      <p class="sub" id="modalSub">Tell us how to reach you and our team will follow up shortly.</p>
+      <div class="field"><label>Full name *</label><input id="fName" autocomplete="name"></div>
+      <div class="field"><label>Email *</label><input id="fEmail" type="email" autocomplete="email"></div>
+      <div class="field"><label>Phone</label><input id="fPhone" autocomplete="tel"></div>
+      <div class="field"><label>What do you need?</label><textarea id="fNeed" rows="2"></textarea></div>
+      <button class="submit" id="btnSubmit">Send my details</button>
+    </div>
+    <div class="ok" id="okView" style="display:none">
+      <div class="glyph">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="m9.55 16.7-4.2-4.2 1.4-1.4 2.8 2.8 7.8-7.8 1.4 1.4Z"/></svg>
+      </div>
+      <h3 id="okTitle">Thank you!</h3>
+      <p id="okText">Your details have been received. A member of our team will contact you shortly.</p>
+      <button class="submit" id="btnDone">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const log = document.getElementById("log");
+const quicks = document.getElementById("quicks");
+const inp = document.getElementById("inp");
+const btnSend = document.getElementById("btnSend");
+const clientbar = document.getElementById("clientbar");
+const overlay = document.getElementById("overlay");
+let clients = [], cfg = null, sessionId = crypto.randomUUID(), busy = false;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function nowTime(){ return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+
+function applyTheme(c){
+  document.documentElement.style.setProperty("--brand", c.brand_color || "#059669");
+  document.documentElement.style.setProperty("--brand-dark", c.brand_color || "#059669");
+  document.documentElement.style.setProperty("--accent", c.accent || "#f59e0b");
+  document.title = c.brand_name + " · AI Assistant";
+  $("agentName").innerHTML = esc(c.agent_name) + " · " + esc(c.brand_name);
+  $("avatarChar").textContent = (c.agent_name || "A").charAt(0).toUpperCase();
+  $("modalSub").textContent = "Tell us how to reach you and " + c.agent_name + "'s team will follow up shortly.";
+}
+
+function addMsg(role, text){
+  const row = document.createElement("div");
+  row.className = "msg " + role;
+  const who = role === "agent" ? `<div class="mini">${esc((cfg?.agent_name||"A").charAt(0).toUpperCase())}</div>` : "";
+  const ts = `<span class="ts">${nowTime()}</span>`;
+  row.innerHTML = who + `<div class="bubble"></div>`;
+  row.querySelector(".bubble").textContent = text;
+  const t = document.createElement("span"); t.className="ts"; t.textContent = nowTime();
+  row.querySelector(".bubble").appendChild(t);
+  log.appendChild(row);
+  log.scrollTop = 1e9;
+  return row;
+}
+
+function addNotice(html){
+  const n = document.createElement("div");
+  n.className = "notice"; n.innerHTML = html;
+  log.appendChild(n); log.scrollTop = 1e9;
+}
+
+function typingOn(){
+  const t = document.createElement("div");
+  t.className = "msg agent"; t.innerHTML = `<div class="mini">${esc((cfg?.agent_name||"A").charAt(0).toUpperCase())}</div><div class="bubble typing"><i></i><i></i><i></i></div>`;
+  log.appendChild(t); log.scrollTop = 1e9;
+  return () => t.remove();
+}
+
+function renderChips(list){
+  quicks.innerHTML = "";
+  (list||[]).forEach(q => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = q;
+    b.onclick = () => send(q);
+    quicks.appendChild(b);
+  });
+}
+
+function resetChat(){
+  log.innerHTML = ""; quicks.innerHTML = "";
+  sessionId = crypto.randomUUID();
+  renderChips(cfg && cfg.suggestions);
+  if (cfg) addMsg("agent", cfg.welcome);
+}
+
+function selectClient(id){
+  cfg = clients.find(c => c.id === id);
+  applyTheme(cfg);
+  document.querySelectorAll(".clients").forEach(b => b.classList.toggle("active", b.dataset.id === id));
+  resetChat();
+}
+
+/* SSE streaming */
+async function send(text){
+  const v = (text ?? inp.value).trim();
+  if (!v || busy || !cfg) return;
+  inp.value = ""; autoGrow(); busy = true; btnSend.disabled = true; renderChips([]);
+  addMsg("user", v);
+  const stopType = typingOn();
+  let liveNode = null;
+
+  const handle = (ev, data) => {
+    if (ev === "token"){
+      if (!liveNode){
+        stopType();
+        const row = addMsg("agent", "");
+        const bub = row.querySelector(".bubble");
+        liveNode = document.createTextNode("");
+        bub.insertBefore(liveNode, bub.querySelector(".ts"));
+      }
+      liveNode.nodeValue += data;
+      log.scrollTop = 1e9;
+    } else if (ev === "lead_saved"){
+      stopType(); liveNode = null;
+      addNotice(`Great news — your details were saved. <b>${esc(data.lead.name||"")}</b> will be contacted shortly.`);
+    } else if (ev === "demo_booked"){
+      stopType(); liveNode = null;
+      addNotice(`Demo confirmed: <b>${esc(data.demo.date)} at ${esc(data.demo.time)}</b>. A confirmation email is on its way.`);
+    } else if (ev === "error"){
+      stopType(); liveNode = null;
+      addMsg("agent", "Sorry, I ran into a problem. Please try again in a moment.");
+    } else if (ev === "done"){
+      stopType(); liveNode = null;
+      renderChips(cfg.suggestions);
+    }
+  };
+
+  try{
+    const res = await fetch("/chat/stream", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({client_id:cfg.id, session_id:sessionId, message:v})
+    });
+    if (!res.ok){
+      const body = await res.json().catch(()=> ({}));
+      stopType();
+      addMsg("agent", body.detail ? `That reply was throttled: ${body.detail}` : "Sorry, something went wrong. Please try again.");
+    } else {
+      const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
+      while (true){
+        const {done, value} = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, {stream:true});
+        const parts = buf.split("\n\n"); buf = parts.pop();
+        for (const part of parts){
+          let ev="", data="";
+          for (const line of part.split("\n")){
+            if (line.startsWith("event:")) ev = line.slice(6).trim();
+            else if (line.startsWith("data:")) data = line.slice(5).trim();
+          }
+          if (ev && data) handle(ev, JSON.parse(data));
+        }
+      }
+      handle("done", {});
+    }
+  } catch(e){
+    stopType(); if (!liveNode) addMsg("agent", "Network error. Check that the server is running.");
+  } finally {
+    busy = false; btnSend.disabled = false; inp.focus();
+  }
+}
+
+/* lead form */
+const openForm = () => { overlay.classList.add("open"); $("formView").style.display=""; $("okView").style.display="none"; $("fName").focus(); };
+const closeForm = () => overlay.classList.remove("open");
+$("btnContact").onclick = openForm;
+$("btnClose").onclick = closeForm;
+overlay.addEventListener("click", e => { if (e.target === overlay) closeForm(); });
+
+$("btnSubmit").onclick = async () => {
+  const body = { client_id: cfg.id, name: $("fName").value.trim(), email: $("fEmail").value.trim(),
+                 phone: $("fPhone").value.trim(), need: $("fNeed").value.trim() };
+  if (!body.name || !body.email){ $("fName").focus(); return; }
+  $("btnSubmit").disabled = true;
+  try{
+    const r = await fetch("/lead", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+    const j = await r.json();
+    $("okTitle").textContent = "Thank you, " + (j.lead.name||"") + "!";
+    $("okText").textContent = "Your details were received. " + (cfg?.agent_name||"Our team") + "'s team will contact you shortly.";
+    $("formView").style.display = "none"; $("okView").style.display = "";
+  } catch(e){
+    $("okTitle").textContent = "Something went wrong";
+    $("okText").textContent = "Please check your connection and try again.";
+    $("formView").style.display = "none"; $("okView").style.display = "";
+  } finally { $("btnSubmit").disabled = false; }
+};
+$("btnDone").onclick = closeForm;
+$("fEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("btnSubmit").click(); });
+
+/* input behaviors */
+inp.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); }});
+btnSend.onclick = () => send();
+$("btnNew").onclick = resetChat;
+function autoGrow(){ inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, 110) + "px"; }
+inp.addEventListener("input", autoGrow);
+
+/* client bar */
+async function boot(){
+  try{
+    const r = await fetch("/clients"); clients = await r.json();
+    clientbar.innerHTML = "";
+    (clients||[]).forEach(c => {
+      const b = document.createElement("button");
+      b.className = "clients"; b.textContent = c.brand_name; b.dataset.id = c.id;
+      b.onclick = () => selectClient(c.id);
+      clientbar.appendChild(b);
+    });
+    const url = new URL(location.href);
+    const wanted = url.searchParams.get("client") || clients[0]?.id || "acme";
+    const target = clients.find(c => c.id === wanted) || clients[0];
+    if (!target) return;
+    selectClient(target.id);
+  } catch(e){
+    $("agentName").textContent = "Server unreachable";
+    addMsg("agent", "Could not load the assistant. Is the backend running?");
+  }
+}
+
+/* autosize footer hint */
+$("foot").innerHTML = "Powered by your AI sales agent · " +
+  `<a href="/dashboard" target="_blank" style="color:var(--brand-dark);text-decoration:underline">view leads</a>`;
+
+boot();
+})();
+</script>
+</body>
+</html>

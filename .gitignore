@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.venv/
+venv/
+
+# Secrets - never commit real keys
+.env
+
+# Runtime data (rebuilt at startup / regenerated locally)
+vectordb/
+leads_*.jsonl
+demos_*.jsonl
+
+# Scratch / local copies
+*copy*
+*.bak
+
+# Unused root config (per-client configs live under clients/)
+/config.yaml

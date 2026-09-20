@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+openai
+chromadb
+pyyaml
+python-dotenv
+
+# Document parsing for the knowledge base
+openpyxl
+pypdf
+python-docx
+pytesseract
+pillow
