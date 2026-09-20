@@ -26,7 +26,7 @@ from openai import OpenAI
 from pydantic import BaseModel
 
 from docparse import extract_text
-from ingest import DB_PATH, index_client
+from ingest import index_client
 
 load_dotenv()
 llm = OpenAI(base_url=os.environ["LLM_BASE_URL"], api_key=os.environ["LLM_API_KEY"])
@@ -388,7 +388,7 @@ def documents_all():
         cid = Path(p).parent.name
         try:
             out.append({"client": cid, "docs": list_docs(cid)})
-        except HTTPException:  # noqa: BLE001, S112 - skip broken client dirs
+        except HTTPException:
             continue
     return out
 
@@ -399,7 +399,7 @@ def documents(client: str):
 
 
 @app.post("/api/documents/{client}")
-async def documents_upload(client: str, file: UploadFile = File(...)):
+async def documents_upload(client: str, file: UploadFile = File(...)):  # noqa: B008 - FastAPI dependency marker
     d = docs_dir(client)
     name = safe_name(file.filename or "upload")
     ext = Path(name).suffix.lower()
