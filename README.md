@@ -41,3 +41,20 @@ git add . && git commit -m "deploy sales agent" && git push
 ```
 
 Your app will be live at `https://<your-org>-<space-name>.hf.space`.
+
+
+
+---
+title: Sales Chatbot
+emoji: ⚡
+colorFrom: indigo
+colorTo: green
+sdk: gradio
+sdk_version: 6.28.0
+python_version: '3.12'
+app_file: app.py
+pinned: false
+license: apache-2.0
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
