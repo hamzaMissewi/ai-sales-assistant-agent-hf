@@ -13,4 +13,4 @@ for c in clients/*/; do
   python ingest.py "$(basename "$c")"
 done
 
-exec uvicorn server:app --host 0.0.0.0 --port 7860
+exec uvicorn server:app --host 0.0.0.0 --port "${PORT:-7860}"

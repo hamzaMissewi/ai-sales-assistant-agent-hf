@@ -1,5 +1,6 @@
 """Usage: python ingest.py acme   -> indexes clients/acme/docs/* into a vector DB"""
 
+import os
 import pathlib
 import sys
 
@@ -7,7 +8,7 @@ import chromadb
 
 from docparse import extract_text
 
-DB_PATH = "./vectordb"
+DB_PATH = os.environ.get("CHROMA_DB_PATH", "./vectordb")
 
 
 def chunk(text, size=800, overlap=120):
@@ -20,6 +21,7 @@ def chunk(text, size=800, overlap=120):
 
 def index_client(client, files=None, db_path=DB_PATH):
     """(Re)build a client's collection. With files=None, indexes all of docs/."""
+    pathlib.Path(db_path).mkdir(parents=True, exist_ok=True)
     db = chromadb.PersistentClient(path=db_path)
     if any(c.name == client for c in db.list_collections()):
         db.delete_collection(client)

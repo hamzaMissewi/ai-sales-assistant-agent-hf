@@ -14,8 +14,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=user:user . /app
 RUN cp .env.example .env && chmod +x start.sh
 
+RUN mkdir -p /app/vectordb /home/user/.cache/chroma \
+    && chmod -R a+rwX /app \
+    && chown -R user:user /home/user
+
 USER user
 ENV HOME=/home/user
+ENV CHROMA_DB_PATH=/app/vectordb
 EXPOSE 7860
 
 CMD ["./start.sh"]

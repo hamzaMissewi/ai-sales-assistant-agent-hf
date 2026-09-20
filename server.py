@@ -57,7 +57,9 @@ def complete(messages: list, **kwargs):
 
 
 ROOT = Path(__file__).parent
-db = chromadb.PersistentClient(path=str(ROOT / "vectordb"))
+CHROMA_DB_PATH = Path(os.environ.get("CHROMA_DB_PATH", str(ROOT / "vectordb")))
+CHROMA_DB_PATH.mkdir(parents=True, exist_ok=True)
+db = chromadb.PersistentClient(path=str(CHROMA_DB_PATH))
 sessions = defaultdict(list)  # (client, session) -> messages
 calls = defaultdict(list)  # rate limit: (client, ip) -> timestamps
 
@@ -412,7 +414,7 @@ async def documents_upload(client: str, file: UploadFile = File(...)):  # noqa: 
     if not data:
         raise HTTPException(422, "Empty file")
     (d / name).write_bytes(data)
-    chunks = index_client(client, files=[d / name], db_path=str(ROOT / "vectordb"))
+    chunks = index_client(client, files=[d / name], db_path=str(CHROMA_DB_PATH))
     return {"ok": True, "name": name, "size": len(data), "chunks": chunks}
 
 
@@ -421,7 +423,7 @@ def documents_delete(client: str, name: str):
     f = docs_dir(client) / safe_name(name)
     if f.exists():
         f.unlink()
-    chunks = index_client(client, db_path=str(ROOT / "vectordb"))
+    chunks = index_client(client, db_path=str(CHROMA_DB_PATH))
     return {"ok": True, "chunks": chunks}
 
 
