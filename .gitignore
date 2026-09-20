@@ -19,3 +19,6 @@ demos_*.jsonl
 
 # Unused root config (per-client configs live under clients/)
 /config.yaml
+
+**/*copy*
+**/*ignore*

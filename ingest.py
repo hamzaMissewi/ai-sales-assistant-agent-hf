@@ -19,11 +19,19 @@ def chunk(text, size=800, overlap=120):
     return out
 
 
-def index_client(client, files=None, db_path=DB_PATH):
-    """(Re)build a client's collection. With files=None, indexes all of docs/."""
+def index_client(client, files=None, db_path=DB_PATH, rebuild=True):
+    """(Re)build a client's collection. With files=None, indexes all of docs/.
+
+    rebuild=False skips collections that already hold data (used at boot so a
+    persistent disk's model cache keeps the startup fast and download-free).
+    """
     pathlib.Path(db_path).mkdir(parents=True, exist_ok=True)
     db = chromadb.PersistentClient(path=db_path)
-    if any(c.name == client for c in db.list_collections()):
+    exists = any(c.name == client for c in db.list_collections())
+    if exists and db.get_collection(client).count() > 0:
+        if not rebuild:
+            print(f"{client}: already indexed, skipping")
+            return 0
         db.delete_collection(client)
     col = db.create_collection(client)  # default local embedding model, free
 
@@ -51,7 +59,7 @@ def index_client(client, files=None, db_path=DB_PATH):
 
 
 def main(client):
-    n = index_client(client)
+    n = index_client(client, rebuild=False)
     if not n:
         print(f"No indexable documents found for {client} in clients/{client}/docs")
         return
